@@ -1,0 +1,35 @@
+Update Git Branch Workflow 
+
+Goal: Merge `dev` into `main`
+1. Switch to the main branch:
+   git checkout main
+
+2. Pull the latest changes from GitHub:
+   git pull origin main
+
+3. Merge the `dev` branch into `main`:
+   git merge dev
+
+4. Push the updated `main` branch to GitHub:
+   git push origin main
+
+----------------------------------------
+
+Goal: When switching to a new device and want to update local branches
+
+Update `main`:
+   git checkout main
+   git pull origin main
+
+Update `dev`:
+   git checkout dev
+   git pull origin dev
+
+----------------------------------------
+
+Goal: Push local `dev` changes to `origin/dev`
+1. Make sure you're on the `dev` branch:
+   git checkout dev
+
+2. Push your local `dev` changes to GitHub:
+   git push origin dev
