@@ -1,0 +1,42 @@
+[
+    {
+        "id" : "wood", 
+        "name" : "Wood", 
+        "stack_size" : 99, 
+        "weight" : 0.1, 
+        "tags" : ["material"]
+    },
+    {
+        "id" : "stone", 
+        "name" : "Stone", 
+        "stack_size" : 99, 
+        "weight" : 0.2, 
+        "tags" : ["material"]
+    },
+    {
+        "id" : "apple", 
+        "name" : "Apple", 
+        "stack_size" : 20, 
+        "weight" : 0.1, 
+        "tags" : ["food"]
+    },
+    {
+        "id" : "iron_sword", 
+        "name" : "Iron Sword", 
+        "stack_size" : 1, 
+        "weight" : 3.0, 
+        "tags" : ["weapon"],
+        "base_damage" : 12, 
+        "max_durability" : 100
+    },
+    {
+        "id" : "cloth_armor",
+        "name" : "Cloth Armor",
+        "stack_size" : 1,
+        "weight" : 1.0,
+        "tags" : ["armor"],
+        "max_durability" : 60.0,
+        "base_protection" : 1.0,
+        "status_effects" : ["+5% movement speed"]
+    }
+]
