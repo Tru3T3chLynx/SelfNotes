@@ -1,6 +1,8 @@
 from pathlib import Path
 from inventory.items import Items
 from inventory.inventory import Inventory
+from player.player import Player
+from storage.storage import Storage
 
 # Dictionary of sections
 MODES = {
@@ -10,10 +12,15 @@ MODES = {
 state = MODES["inventory"]
 
 def runInventory():
-    items = Items.load(Path("inventory/items.json"))
+    root = Path(__file__).parent
+    items_path = root / "inventory" / "items.json"
+    items = Items.load(items_path)
     inv = Inventory(capacity=8, items=items)
 
-    test = 3
+    player = Player(name = "Player", items = items, inv_capacity = 8)
+    chest = Storage(items = items, capacity = 8, name = "Chest")
+
+    test = 5
     match test:
         case 0:
             print("\n=== Seed exact test state with setSlot ===")
@@ -137,6 +144,86 @@ def runInventory():
             items.loseDurability(inv.slots[0].iid, 0.5)
             print("after small wear:")
             print(inv.describeSlot(0))
+        case 4:
+            # basic pickup
+            player.addInv("wood", 50)
+            player.addInv("apple", 3)
+            player.showInventory()
+
+            # add weapon
+            player.addInv("iron_sword", 1)
+            player.showInventory(detailed = True)
+
+            # rearrange a bit
+            player.moveInv(0, 3)
+            player.showInventory(detailed = True)
+            player.splitInv(1, 5, 2)
+            player.showInventory(detailed = True)
+            player.sortInv()
+            player.showInventory(detailed = True)
+            player.splitHalfInv(2, 7)
+            player.showInventory(detailed = True)
+        case 5:
+            # check different inventory types
+            player.addInv("wood", 50)
+            player.addInv("apple", 3)
+            player.showInventory()
+
+            sword_max = items.defs["iron_sword"].max_durability or 100.0
+            d80 = sword_max * 0.80
+            d45 = sword_max * 0.45
+
+            chest.setSlot(1, "iron_sword", 1, current_durability = d80)
+            chest.setSlot(2, "iron_sword", 1, current_durability = d45)
+
+            chest.addInv("wood", 150)
+            chest.addInv("apple", 10)
+            chest.showInventory()
+
+            # armor one fully durable, one 50%
+            armor_max = items.defs["cloth_armor"].max_durability or 60.0
+            chest.setSlot(5, "cloth_armor", 1)
+            chest.setSlot(6, "cloth_armor", 1, current_durability = armor_max * 0.50)
+
+            print("\n=== Before ===")
+            chest.showInventory(detailed = True)
+
+            # verify sword durabilities before swap
+            iid1_before = chest.inv.slots[1].iid
+            iid2_before = chest.inv.slots[2].iid
+            dur1_before = items.getDurability(iid1_before)
+            dur2_before = items.getDurability(iid2_before)
+            print(f"\nslot1 sword dur(before): {dur1_before}")
+            print(f"\nslot2 sword dur(before): {dur2_before}")
+
+            # swap
+            t = chest.moveInv(1, 2)
+            print("\nswap swords ok?", t)
+
+            iid1_after = chest.inv.slots[1].iid
+            iid2_after = chest.inv.slots[2].iid
+            dur1_after = items.getDurability(iid1_after)
+            dur2_after = items.getDurability(iid2_after)
+            print(f"slot1 sword dur(after): {dur1_after}")
+            print(f"slot2 sword dur(after): {dur2_after}")
+
+            # wear down armor in slot 5 by a small amount
+            items.loseDurability(chest.inv.slots[5].iid, 0.5)
+            print("\nafter slight armor wear on slot 5:")
+            if hasattr(chest.inv, "describeSlot"):
+                print(chest.inv.describeSlot(5))
+            else:
+                print("slot5 armor dur:", items.getDurability(chest.inv.slots[5].iid))
+
+            # --- remove some wood, then sort ---
+            print(f"wood: {chest.count("wood")}")
+            removed = chest.removeInv("wood", 60)
+            print(f"\nremoved wood: {removed}")
+            print(f"wood: {chest.count("wood")}")
+            chest.sortInv()
+
+            print("\n=== AFTER SORT ===")
+            chest.showInventory(detailed = True)
 
 if __name__ == "__main__":
     if state == MODES["inventory"]:
