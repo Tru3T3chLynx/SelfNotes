@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional
 from pathlib import Path
 from uuid import uuid4
-import json
+import json5
 
 @dataclass(frozen=True)
 class ItemDef:
@@ -15,9 +15,11 @@ class ItemDef:
     max_durability : Optional[float] = None
     base_protection : Optional[float] = None
     status_effects : tuple[str, ...] = ()
+    hunger_fill : Optional[float] = None
+    health_fill : Optional[float] = None
 
 def loadItemDefs(path: Path) -> Dict[str, ItemDef]:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json5.loads(path.read_text(encoding = "utf-8"))
     defs : Dict[str, ItemDef] = {}
     for row in data:
         defs[row["id"]] = ItemDef(
@@ -30,6 +32,8 @@ def loadItemDefs(path: Path) -> Dict[str, ItemDef]:
             max_durability = (int(row["max_durability"]) if "max_durability" in row else None),
             base_protection = (float(row["base_protection"]) if "base_protection" in row else None),
             status_effects = tuple(row.get("staus_effects", [])),
+            hunger_fill = (float(row["hunger_fill"]) if "hunger_fill" in row else None),
+            health_fill = (float(row["health_fill"]) if "health_fill" in row else None)
         )
     return defs
 

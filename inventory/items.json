@@ -1,4 +1,5 @@
 [
+    /* MATERIALS */
     {
         "id" : "wood", 
         "name" : "Wood", 
@@ -14,12 +15,70 @@
         "tags" : ["material"]
     },
     {
+        "id" : "iron_ingot", 
+        "name" : "Iron Ingot", 
+        "stack_size" : 99, 
+        "weight" : 0.5, 
+        "tags" : ["material"]
+    },
+
+    /* FOOD */
+    {
         "id" : "apple", 
         "name" : "Apple", 
         "stack_size" : 20, 
-        "weight" : 0.1, 
-        "tags" : ["food"]
+        "weight" : 0.2, 
+        "tags" : ["food", "cookable"],
+        "hunger_fill" : 2,
+        "health_fill" : 2
     },
+    {
+        "id" : "cooked_apple", 
+        "name" : "Cooked Apple", 
+        "stack_size" : 20, 
+        "weight" : 0.2, 
+        "tags" : ["cooked_food", "edible"],
+        "hunger_fill" : 5,
+        "health_fill" : 5
+    },
+    {
+        "id" : "burned_apple", 
+        "name" : "Burned Apple", 
+        "stack_size" : 20, 
+        "weight" : 0.2, 
+        "tags" : ["burned"],
+        "hunger_fill" : 1,
+        "health_fill" : 1
+    },
+    {
+        "id" : "dough", 
+        "name" : "Dough", 
+        "stack_size" : 20, 
+        "weight" : 0.3, 
+        "tags" : ["food", "cookable"],
+        "hunger_fill" : 2,
+        "health_fill" : 2
+    },
+    {
+        "id" : "apple_pie", 
+        "name" : "Apple Pie", 
+        "stack_size" : 20, 
+        "weight" : 0.5, 
+        "tags" : ["food", "edible"],
+        "hunger_fill" : 10,
+        "health_fill" : 10
+    },
+    {
+        "id" : "burned_apple_pie", 
+        "name" : "Burned Apple Pie", 
+        "stack_size" : 20, 
+        "weight" : 0.5, 
+        "tags" : ["burned"],
+        "hunger_fill" : 2,
+        "health_fill" : 2
+    },
+
+    /* WEAPONS */
     {
         "id" : "iron_sword", 
         "name" : "Iron Sword", 
@@ -27,8 +86,28 @@
         "weight" : 3.0, 
         "tags" : ["weapon"],
         "base_damage" : 12, 
-        "max_durability" : 100
+        "max_durability" : 100.0
     },
+    {
+        "id" : "wooden_pickaxe", 
+        "name" : "Wooden Pickaxe", 
+        "stack_size" : 1, 
+        "weight" : 2.0, 
+        "tags" : ["weapon", "craftable"],
+        "base_damage" : 4,
+        "max_durability" : 60.0
+    },
+    {
+        "id" : "iron_pickaxe", 
+        "name" : "Iron Pickaxe", 
+        "stack_size" : 1, 
+        "weight" : 2.5, 
+        "tags" : ["weapon", "craftable"],
+        "base_damage" : 6,
+        "max_durability" : 120.0
+    },
+
+    /* ARMOR */
     {
         "id" : "cloth_armor",
         "name" : "Cloth Armor",

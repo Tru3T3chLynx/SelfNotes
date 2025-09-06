@@ -3,13 +3,18 @@ from inventory.items import Items
 from inventory.inventory import Inventory
 from player.player import Player
 from storage.storage import Storage
+from crafting.crafting import Crafting
+from crafting.recipes import getRecipes as getCraftingRecipes
+from cooking.cooking import CookingStation
+from cooking.recipes import getRecipes as getCookingRecipes
 
 # Dictionary of sections
 MODES = {
-    "inventory" : 0
+    "inventory" : 0,
+    "cooking" : 1
 }
 # Choose what section to run
-state = MODES["inventory"]
+state = MODES["cooking"]
 
 def runInventory():
     root = Path(__file__).parent
@@ -19,8 +24,9 @@ def runInventory():
 
     player = Player(name = "Player", items = items, inv_capacity = 8)
     chest = Storage(items = items, capacity = 8, name = "Chest")
+    crafting = Crafting(items, recipes = getCraftingRecipes())
 
-    test = 5
+    test = 6
     match test:
         case 0:
             print("\n=== Seed exact test state with setSlot ===")
@@ -216,15 +222,188 @@ def runInventory():
                 print("slot5 armor dur:", items.getDurability(chest.inv.slots[5].iid))
 
             # --- remove some wood, then sort ---
-            print(f"wood: {chest.count("wood")}")
+            print(f"wood: {chest.count('wood')}")
             removed = chest.removeInv("wood", 60)
             print(f"\nremoved wood: {removed}")
-            print(f"wood: {chest.count("wood")}")
+            print(f"wood: {chest.count('wood')}")
             chest.sortInv()
 
             print("\n=== AFTER SORT ===")
             chest.showInventory(detailed = True)
+        case 6:
+            # seed materials
+            inv.add("wood", 4)
+            inv.add("iron_ingot", 2)
+            print("Before: ", inv)
+
+            ok, msg = crafting.canCraft(inv, "wooden_pickaxe", times = 1)
+            print("canCraft wooden_pickaxe?", ok, "|", msg)
+            if ok:
+                print("craft wooden_pickaxe ->", crafting.craft(inv, "wooden_pickaxe", 1))
+                print("After wooden:", inv)
+
+            ok, msg = crafting.canCraft(inv, "iron_pickaxe", times = 1)
+            print("canCraft iron_pickaxe?", ok, "|", msg)
+            if ok:
+                print("craft iron_pickaxe ->", crafting.craft(inv, "iron_pickaxe", 1))
+                print("After iron:", inv)
+            
+            ok, msg = crafting.canCraft(inv, "iron_pickaxe", times = 1)
+            print("canCraft iron_pickaxe?", ok, "|", msg)
+            if ok:
+                print("craft iron_pickaxe ->", crafting.craft(inv, "iron_pickaxe", 1))
+                print("After iron:", inv)
+
+            inv.add("wood", 1)
+            inv.add("iron_ingot", 2)
+            
+            ok, msg = crafting.canCraft(inv, "iron_pickaxe", times = 2)
+            print("canCraft iron_pickaxe?", ok, "|", msg)
+            if ok:
+                print("craft iron_pickaxe ->", crafting.craft(inv, "iron_pickaxe", 2))
+                print("After iron:", inv)
+            
+            inv.add("wood", 6)
+            inv.add("iron_ingot", 12)
+            
+            ok, msg = crafting.canCraft(inv, "iron_pickaxe", times = 5)
+            print("canCraft iron_pickaxe?", ok, "|", msg)
+            if ok:
+                print("craft iron_pickaxe ->", crafting.craft(inv, "iron_pickaxe", 5))
+                print("After iron:", inv)
+
+def runCooking():
+    root = Path(__file__).parent
+    items = Items.load(root / "inventory" / "items.json")
+
+    def makeInv(capacity = 30):
+        return Inventory(capacity = capacity, items = items)
+    
+    def expect(name, cond):
+        print(f"[{'PASS' if cond else 'FAIL'}] {name}")
+
+    recipes = getCookingRecipes()
+
+    # --------------------------------------
+    print("\n=== TEST 1: Preview + Select (apple -> cooked_apple; add dough/bread -> pie) ===")
+    inv1 = makeInv(20)
+    st1 = CookingStation(items, recipes, num_inputs = 5, num_outputs = 1, burn_enabled = False)
+
+    # load 2 apples in two input slots
+    st1.addIngredient(0, "apple", 1)
+    st1.addIngredient(1, "apple", 1)
+    preview1 = st1.previewRecipeKey()
+    print("Preview with only apples:", preview1)
+    expect("Preview recipe is cooked_apple", preview1 == "cooked_apple")
+
+    # add the rest of the inputs for the pie recipe based on the recipe definition
+    pie_rec = recipes.get("apple_pie")
+    if pie_rec:
+        for iid, need in pie_rec.inputs:
+            have = sum(s.qty for s in st1.inputs if s.item_id == iid)
+            missing = max(0, need - have)
+            if missing > 0:
+                for idx in range(len(st1.inputs)):
+                    if st1.inputs[idx].item_id in (None, iid):
+                        if missing <= 0:
+                            break
+                        placed = st1.addIngredient(idx, iid, missing)
+                        missing -= placed
+        
+        preview2 = st1.previewRecipeKey()
+        print("Preview with apple + second ingredient:", preview2)
+        expect("Preview now prefers apple_pie", preview2 == "apple_pie")
+
+        print("Options from current inputs:")
+        st1.printRecipeOptions()
+        ok, msg = st1.selectRecipeByIndex(0)
+        print("selectRecipeByIndex(0):", ok, "|", msg)
+        expect("Active recipe is apple_pie after selection", st1.active_recipe == "apple_pie")
+    else:
+        print("Note: no 'apple_pie' recipe found; skipping pie-specific checks.")
+
+    # --------------------------------------
+    print("\n=== TEST 2: Batch cooking (no burning), collect cooked ===")
+    inv2 = makeInv(20)
+    st2 = CookingStation(items, recipes, burn_enabled = False)
+    st2.setRecipe("cooked_apple")
+    st2.addIngredient(0, "apple", 2)
+
+    # advance enough to cook 2 apples
+    st2.advance(5.0)
+    st2.advance(5.0)
+    print("Status:", st2.statusText())
+    cooked_slot = st2.cooked_out[0]
+    expect("Cooked slot holds cooked_apple", cooked_slot.item_id == "cooked_apple")
+    expect("Cooked qty == 2", cooked_slot.qty == 2)
+
+    # collect into inventory
+    before = inv2.count("cooked_apple")
+    taken = st2.collectCooked(inv2)
+    after = inv2.count("cooked_apple")
+    print("Collected:", taken, "Inventory count now:", after)
+    expect("Collected all cooked apples", taken == 2 and after - before == 2)
+    expect("Cooked slot cleared", st2.cooked_out[0].item_id is None and st2.cooked_out[0].qty == 0)
+
+    # --------------------------------------
+    print("\n=== TEST 3: Burn flow ===")
+    inv3 = makeInv(20)
+    st3 = CookingStation(items, recipes, burn_enabled = True)
+    st3.setRecipe("cooked_apple")
+    st3.addIngredient(0, "apple", 1)
+
+    # cook it
+    st3.advance(5.0)
+    expect("Cooked now present", st3.cooked_out[0].item_id == "cooked_apple" and st3.cooked_out[0].qty == 1)
+
+    # Let it burn after its burn window
+    st3.advance(5.0)
+    # One unit should have moved to burned_out
+    burned_id = recipes["cooked_apple"].burned_output[0]
+    expect("Cooked slot now empty", st3.cooked_out[0].item_id is None)
+    expect("Burned slot appeared", st3.burned_out[0].item_id == burned_id and st3.burned_out[0].qty == 1)
+
+    # Collect burned and ensure slot disappears
+    b_before = inv3.count(burned_id)
+    b_taken = st3.collectBurned(inv3)
+    b_after = inv3.count(burned_id)
+    expect("Collected burned item", b_taken == 1 and b_after - b_before == 1)
+    expect("Burned slot hidden again", st3.burned_out[0].item_id is None and st3.burned_out[0].qty == 0)
+
+    # --------------------------------------
+    print("\n=== TEST 4: Stop when cooked is full -> start burning ===")
+    inv4 = makeInv(20)
+    st4 = CookingStation(items, recipes, burn_enabled = True)
+    st4.setRecipe("cooked_apple")
+    st4.addIngredient(0, "apple", 10)
+    # artificially fill cooked_out to max to simulate "full"
+    cooked_id = recipes["cooked_apple"].cooked_output[0]
+    max_stack = items.defs[cooked_id].stack_size
+    st4.cooked_out[0].item_id = cooked_id
+    st4.cooked_out[0].qty = max_stack
+
+    # try to advance: it can't start cooking (no room), so after burn_time it should burn one
+    st4.advance(recipes["cooked_apple"].burn_time)
+    expect("Cooked decreased by 1", st4.cooked_out[0].qty == max_stack - 1)
+    burned_id = recipes["cooked_apple"].burned_output[0]
+    expect("Burned increased by 1", st4.burned_out[0].item_id == burned_id and st4.burned_out[0].qty == 1)
+
+    # --------------------------------------
+    print("\n=== TEST 5: Selection blocked while cooking ===")
+    st5 = CookingStation(items, recipes, burn_enabled = False)
+    # seed enough for multiple batches of cooked_apple
+    st5.addIngredient(0, "apple", 3)
+    ok, msg = st5.selectRecipeByKey("cooked_apple")
+    expect("Selected cooked_apple", ok)
+    # force start immediately
+    st5.advance(0.001)
+    ok2, msg2 = st5.selectRecipeByKey("apple_pie")
+    expect("Selection blocked while busy", (not ok2) and "Busy" in msg2)
+
+    print("\nAll tests above executed.\n")
 
 if __name__ == "__main__":
     if state == MODES["inventory"]:
         runInventory()
+    if state == MODES["cooking"]:
+        runCooking()
